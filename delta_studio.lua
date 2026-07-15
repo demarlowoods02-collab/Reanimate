@@ -30,7 +30,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
-MainFrame.Size = UDim2.new(0, 240, 0, 430) 
+MainFrame.Size = UDim2.new(0, 240, 0, 500) 
 MainFrame.Active = true
 MainFrame.Draggable = true 
 MainFrame.Parent = ScreenGui
@@ -76,7 +76,6 @@ local tempFrames = {}
 local frameCount = 1
 local recordConnection = nil
 local targetDummy = nil
-local selectingDummy = false
 
 local RecordBtn = setupButton("⏺ Record (You + Dummy)", 1, Color3.fromRGB(180, 50, 50))
 
@@ -107,6 +106,7 @@ SelectDummyBtn.Font = Enum.Font.SourceSansBold
 SelectDummyBtn.TextSize = 12
 SelectDummyBtn.Parent = DummyFrame
 
+local selectingDummy = false
 local mouse = LocalPlayer:GetMouse()
 
 SelectDummyBtn.MouseButton1Click:Connect(function()
@@ -292,9 +292,42 @@ PlayBtn.Size = UDim2.new(0.48, 0, 1, 0)
 local StopBtn = setupButton("⏹ Stop", 2, Color3.fromRGB(150, 85, 35), ActionRowFrame)
 StopBtn.Size = UDim2.new(0.48, 0, 1, 0)
 
-local CopyBtn = setupButton("📋 Copy Data", 8)
-local ClearBtn = setupButton("🗑 Clear Save", 9, Color3.fromRGB(85, 85, 85))
-local DeleteAllBtn = setupButton("💥 Delete All", 10, Color3.fromRGB(140, 35, 35))
+-- Play target selection
+local PlayTargetFrame = Instance.new("Frame")
+PlayTargetFrame.Size = UDim2.new(0.9, 0, 0, 35)
+PlayTargetFrame.BackgroundTransparency = 1
+PlayTargetFrame.LayoutOrder = 8
+PlayTargetFrame.Parent = MainFrame
+
+local PlayTargetLayout = Instance.new("UIListLayout")
+PlayTargetLayout.FillDirection = Enum.FillDirection.Horizontal
+PlayTargetLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+PlayTargetLayout.SortOrder = Enum.SortOrder.LayoutOrder
+PlayTargetLayout.Padding = UDim.new(0, 6)
+PlayTargetLayout.Parent = PlayTargetFrame
+
+local PlayOnSelfBtn = setupButton("Me", 1, Color3.fromRGB(70, 70, 120), PlayTargetFrame)
+PlayOnSelfBtn.Size = UDim2.new(0.45, 0, 1, 0)
+
+local PlayOnDummyBtn = setupButton("Dummy", 2, Color3.fromRGB(70, 70, 120), PlayTargetFrame)
+PlayOnDummyBtn.Size = UDim2.new(0.45, 0, 1, 0)
+
+local playOnDummy = false
+PlayOnDummyBtn.MouseButton1Click:Connect(function()
+	playOnDummy = true
+	PlayOnDummyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+	PlayOnSelfBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 120)
+end)
+
+PlayOnSelfBtn.MouseButton1Click:Connect(function()
+	playOnDummy = false
+	PlayOnSelfBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+	PlayOnDummyBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 120)
+end)
+
+local CopyBtn = setupButton("📋 Copy Data", 9)
+local ClearBtn = setupButton("🗑 Clear Save", 10, Color3.fromRGB(85, 85, 85))
+local DeleteAllBtn = setupButton("💥 Delete All", 11, Color3.fromRGB(140, 35, 35))
 
 local function cfToTable(cf)
 	return {cf:GetComponents()}
@@ -378,22 +411,6 @@ PlayBtn.MouseButton1Click:Connect(function()
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	if not char or not root or isPlaying or not savedData or next(savedData) == nil then return end
 	
-	-- Find nearest player to sync dummy animation
-	local nearestPlayer = nil
-	local nearestDist = 50
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and player.Character then
-			local playerRoot = player.Character:FindFirstChild("HumanoidRootPart")
-			if playerRoot then
-				local dist = (playerRoot.Position - root.Position).Magnitude
-				if dist < nearestDist then
-					nearestDist = dist
-					nearestPlayer = player
-				end
-			end
-		end
-	end
-	
 	isPlaying = true
 	forceStopPlayback = false
 	PlayBtn.Text = "Playing..."
@@ -401,7 +418,29 @@ PlayBtn.MouseButton1Click:Connect(function()
 	local myJoints = {}
 	for _, v in ipairs(char:GetDescendants()) do if v:IsA("Motor6D") then myJoints[v.Name] = v end end
 	
-	local targetChar = nearestPlayer and nearestPlayer.Character
+	-- Get target character based on selection
+	local targetChar = nil
+	if playOnDummy and targetDummy then
+		targetChar = targetDummy
+	else
+		-- Find nearest player
+		local nearestPlayer = nil
+		local nearestDist = 50
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= LocalPlayer and player.Character then
+				local playerRoot = player.Character:FindFirstChild("HumanoidRootPart")
+				if playerRoot then
+					local dist = (playerRoot.Position - root.Position).Magnitude
+					if dist < nearestDist then
+						nearestDist = dist
+						nearestPlayer = player
+					end
+				end
+			end
+		end
+		targetChar = nearestPlayer and nearestPlayer.Character
+	end
+	
 	local dummyJoints = {}
 	if targetChar then
 		for _, v in ipairs(targetChar:GetDescendants()) do if v:IsA("Motor6D") then dummyJoints[v.Name] = v end end
@@ -467,7 +506,7 @@ PlayBtn.MouseButton1Click:Connect(function()
 						end
 					end
 					
-					-- Play dummy animation on nearest player
+					-- Play dummy animation on target
 					if targetChar then
 						for jName, jointInstance in pairs(dummyJoints) do
 							local tA = dataA["_DummyJoints"] and dataA["_DummyJoints"][jName]
