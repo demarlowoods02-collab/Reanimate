@@ -76,6 +76,7 @@ local tempFrames = {}
 local frameCount = 1
 local recordConnection = nil
 local targetDummy = nil
+local selectingDummy = false
 
 local RecordBtn = setupButton("⏺ Record (You + Dummy)", 1, Color3.fromRGB(180, 50, 50))
 
@@ -106,15 +107,33 @@ SelectDummyBtn.Font = Enum.Font.SourceSansBold
 SelectDummyBtn.TextSize = 12
 SelectDummyBtn.Parent = DummyFrame
 
+local mouse = LocalPlayer:GetMouse()
+
 SelectDummyBtn.MouseButton1Click:Connect(function()
-	local mouse = LocalPlayer:GetMouse()
-	local target = mouse.Target
-	if target then
-		local char = target.Parent
-		if char and char:FindFirstChild("Humanoid") then
-			targetDummy = char
-			DummyLabel.Text = "Dummy: " .. char.Name
-			SelectDummyBtn.BackgroundColor3 = Color3.fromRGB(45, 150, 45)
+	selectingDummy = true
+	SelectDummyBtn.Text = "Click Dummy!"
+	SelectDummyBtn.BackgroundColor3 = Color3.fromRGB(200, 150, 50)
+end)
+
+mouse.Button1Down:Connect(function()
+	if selectingDummy then
+		local target = mouse.Target
+		if target then
+			local char = target.Parent
+			if char and char:FindFirstChild("Humanoid") then
+				targetDummy = char
+				DummyLabel.Text = "Dummy: " .. char.Name
+				SelectDummyBtn.BackgroundColor3 = Color3.fromRGB(45, 150, 45)
+				SelectDummyBtn.Text = "✓ Selected"
+				selectingDummy = false
+				task.wait(1)
+				SelectDummyBtn.Text = "Select"
+				SelectDummyBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 50)
+			else
+				SelectDummyBtn.Text = "Not a Dummy!"
+				task.wait(1)
+				SelectDummyBtn.Text = "Click Dummy!"
+			end
 		end
 	end
 end)
