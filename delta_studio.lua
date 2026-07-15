@@ -30,7 +30,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
-MainFrame.Size = UDim2.new(0, 240, 0, 390) 
+MainFrame.Size = UDim2.new(0, 240, 0, 520) 
 MainFrame.Active = true
 MainFrame.Draggable = true 
 MainFrame.Parent = ScreenGui
@@ -233,9 +233,75 @@ PlayBtn.Size = UDim2.new(0.48, 0, 1, 0)
 local StopBtn = setupButton("⏹ Stop", 2, Color3.fromRGB(150, 85, 35), ActionRowFrame)
 StopBtn.Size = UDim2.new(0.48, 0, 1, 0)
 
-local CopyBtn = setupButton("📋 Copy CFrame Data", 7)
-local ClearBtn = setupButton("🗑 Clear Selected Save File", 8, Color3.fromRGB(85, 85, 85))
-local DeleteAllBtn = setupButton("💥 Delete All Saved Anims", 9, Color3.fromRGB(140, 35, 35))
+-- IMPORT/PASTE SECTION
+local ImportLabel = Instance.new("TextLabel")
+ImportLabel.Size = UDim2.new(0.9, 0, 0, 20)
+ImportLabel.BackgroundTransparency = 1
+ImportLabel.Text = "📥 Paste Animation Data:"
+ImportLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+ImportLabel.Font = Enum.Font.SourceSansBold
+ImportLabel.TextSize = 12
+ImportLabel.TextXAlignment = Enum.TextXAlignment.Left
+ImportLabel.LayoutOrder = 7
+ImportLabel.Parent = MainFrame
+
+local PasteBox = Instance.new("TextBox")
+PasteBox.Size = UDim2.new(0.9, 0, 0, 60)
+PasteBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+PasteBox.BorderSizePixel = 1
+PasteBox.BorderColor3 = Color3.fromRGB(100, 100, 100)
+PasteBox.Text = "Paste JSON here..."
+PasteBox.TextColor3 = Color3.fromRGB(150, 150, 150)
+PasteBox.Font = Enum.Font.SourceSans
+PasteBox.TextSize = 11
+PasteBox.MultiLine = true
+PasteBox.LayoutOrder = 8
+PasteBox.Parent = MainFrame
+
+PasteBox.Focused:Connect(function()
+	if PasteBox.Text == "Paste JSON here..." then
+		PasteBox.Text = ""
+		PasteBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	end
+end)
+
+PasteBox.FocusLost:Connect(function()
+	if PasteBox.Text == "" then
+		PasteBox.Text = "Paste JSON here..."
+		PasteBox.TextColor3 = Color3.fromRGB(150, 150, 150)
+	end
+end)
+
+local ImportBtn = setupButton("✔ Import Pasted Data", 9, Color3.fromRGB(70, 120, 70))
+ImportBtn.MouseButton1Click:Connect(function()
+	if PasteBox.Text == "" or PasteBox.Text == "Paste JSON here..." then
+		ImportBtn.Text = "❌ Nothing to import!"
+		task.wait(2)
+		ImportBtn.Text = "✔ Import Pasted Data"
+		return
+	end
+	
+	local success, decoded = pcall(function()
+		return HttpService:JSONDecode(PasteBox.Text)
+	end)
+	
+	if success and decoded then
+		savedData = decoded
+		ImportBtn.Text = "✅ Imported!"
+		task.wait(2)
+		ImportBtn.Text = "✔ Import Pasted Data"
+		print("Animation data imported successfully!")
+	else
+		ImportBtn.Text = "❌ Invalid JSON!"
+		task.wait(2)
+		ImportBtn.Text = "✔ Import Pasted Data"
+		print("Failed to import: Invalid JSON format")
+	end
+end)
+
+local CopyBtn = setupButton("📋 Copy CFrame Data", 10)
+local ClearBtn = setupButton("🗑 Clear Selected Save File", 11, Color3.fromRGB(85, 85, 85))
+local DeleteAllBtn = setupButton("💥 Delete All Saved Anims", 12, Color3.fromRGB(140, 35, 35))
 
 -- SMOOTH FIX: Removed aggressive rounding entirely to preserve high precision float spaces
 local function cfToTable(cf)
